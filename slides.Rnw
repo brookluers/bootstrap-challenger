@@ -1,0 +1,533 @@
+\documentclass[13pt, t]{beamer}
+\usepackage{graphicx}
+\setbeameroption{hide notes}
+
+%\usepackage[draft]{pdfcomment}
+\usepackage[final]{pdfcomment} % use this to remove annotations
+\setbeamertemplate{note page}[plain]
+\usepackage{pgfpages}
+\usepackage{booktabs}
+\usepackage{float}
+
+\mode<handout>{%
+    \pgfpagesuselayout{4 on 1}[a4paper] 
+    \setbeameroption{show notes}
+}
+
+\usetheme{default}
+\setbeamercolor{block body}{bg=}
+\setbeamercolor{block title}{bg=,fg=black}
+\useinnertheme{rounded}
+
+\usefonttheme{structurebold}
+\usepackage{helvet}
+\beamertemplatenavigationsymbolsempty
+\hypersetup{pdfpagemode=UseNone} % don't show bookmarks on initial view
+
+% declare `cmex` to be arbitrary scalable
+\DeclareFontShape{OMX}{cmex}{m}{n}{
+  <-7.5> cmex7
+  <7.5-8.5> cmex8
+  <8.5-9.5> cmex9
+  <9.5-> cmex10
+}{}
+
+\SetSymbolFont{largesymbols}{normal}{OMX}{cmex}{m}{n}
+\SetSymbolFont{largesymbols}{bold}  {OMX}{cmex}{m}{n}
+
+
+\setbeamerfont{note page}{family*=pplx,size=\footnotesize} % Palatino for notes
+
+% named colors
+\definecolor{foreground}{RGB}{13,13,13}
+\definecolor{background}{RGB}{252,252,252}
+\definecolor{title}{RGB}{13,13,13}
+\definecolor{gray}{RGB}{155,155,155}
+\definecolor{subtitle}{RGB}{13,13,13}
+\definecolor{hilight}{RGB}{102,255,204}
+\definecolor{vhilight}{RGB}{255,111,207}
+\definecolor{lolight}{RGB}{155,155,155}
+%\definecolor{green}{RGB}{125,250,125}
+\setbeamertemplate{itemize item}{\color{foreground}--}
+\setbeamertemplate{enumerate items}[default]
+\setbeamercolor{enumerate items}{fg=foreground}
+
+% use those colors
+\setbeamercolor{titlelike}{fg=foreground}
+\setbeamercolor{subtitle}{fg=foreground}
+\setbeamercolor{institute}{fg=foreground}
+\setbeamercolor{normal text}{fg=foreground,bg=background}
+\setbeamercolor{item}{fg=foreground} % color of bullets
+\setbeamercolor{subitem}{fg=foreground}
+\setbeamercolor{itemize/enumerate subbody}{fg=foreground}
+\setbeamercolor{titlelike}{fg=foreground}
+\setbeamercolor{normal text}{fg=foreground,bg=background}
+\setbeamercolor{bibliography entry author}{fg=foreground}
+\setbeamercolor{bibliography entry title}{fg=foreground} 
+\setbeamercolor{bibliography entry location}{fg=foreground} 
+\setbeamercolor{bibliography entry note}{fg=foreground}  
+\setbeamertemplate{bibliography item}[text]
+\setbeamertemplate{itemize subitem}{\color{foreground}{$\circ$}}
+%\setbeamerfont{itemize/enumerate subbody}{size=\footnotesize}
+%\setbeamerfont{itemize/enumerate subitem}{size=\footnotesize}
+%\renewcommand*{\bibfont}{\scriptsize}
+
+% page number
+%\setbeamertemplate{footline}{%
+%    \raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[20pt]{\color{gray}
+%          \scriptsize\insertframenumber}}}\hspace*{5pt}}
+
+\setbeamertemplate{footline}{%
+    \raisebox{5pt}{\makebox[\paperwidth]{{\color{gray}
+    \hspace*{5pt}\insertsectionhead
+  \ifx\insertsubsectionhead\,\relax\else$\, \mid \,$\insertsubsectionhead\fi
+  }
+  \hfill\makebox[20pt]{\color{gray}
+          \scriptsize\insertframenumber}}}\hspace*{5pt}}
+          
+          
+
+% add a bit of space at the top of the notes page
+\addtobeamertemplate{note page}{\setlength{\parskip}{12pt}}
+
+%\setbeamertemplate{frametitle continuation}{}
+\setbeamertemplate{frametitle continuation}{%
+    \ifnum\insertcontinuationcount>1
+    (continued)
+    % \insertcontinuationcount
+    \fi}
+
+% title info
+\title{Bootstrap Inference}
+\subtitle{A brief introduction using logistic regression}
+\author{Brook Luers\\
+Department of Statistics, University of Michigan\\
+luers@umich.edu\\
+brookluers.com}
+\date{March 26, 2020}
+\usepackage{natbib, hyperref}
+\usepackage{xcolor}
+%\usetikzlibrary{shapes,arrows}
+
+%% Include section title pages
+% \AtBeginSection[]{
+% {
+% \setbeamertemplate{footline}{} % no page number here
+%   \begin{frame}
+%   \vfill
+%   \centering
+%     \usebeamerfont{title}\insertsectionhead\par%
+%   \vfill
+%   \end{frame}
+% }
+% }
+\begin{document}
+
+
+<<echo=FALSE, message=FALSE, warning=FALSE>>=
+knitr::opts_chunk$set(echo=TRUE, fig.width=4, fig.pos='H',size = "tiny",
+                      fig.height=3, fig.align='center',
+                      out.width='0.75\\textwidth',
+                      message=FALSE, warning=FALSE)
+library(tidyverse)
+library(knitr)
+mytheme <- theme(panel.background = element_rect(fill=NA, color='grey'),
+          plot.background = element_rect(fill=NA),
+          text = element_text(color='#0d0d0d'))
+
+@
+
+
+
+% title slide
+{
+\setbeamertemplate{footline}{} % no page number here
+\frame{
+  \titlepage
+}}
+
+
+
+\setbeamertemplate{footline}{%
+    \raisebox{5pt}{\makebox[\paperwidth]{{\color{gray}
+   % \hspace*{5pt}\insertsectionhead
+  %\ifx\insertsubsectionhead\,\relax\else$\, \mid \,$\insertsubsectionhead\fi
+  }
+  \hfill\makebox[20pt]{\color{gray}
+          \scriptsize\insertframenumber}}}\hspace*{5pt}}
+
+\subsection{The Challenger Data}
+
+\begin{frame}{Overview}
+~\\
+We are estimating a parameter $\theta$ using a statistic $\hat{\theta}$.
+~\\~\\
+The bootstrap:
+\begin{itemize}
+\item provides confidence intervals, hypothesis tests for $\theta$
+\item without restrictive assumptions
+\item uses a computer to approximate the sampling distribution of $\hat{\theta}$
+\end{itemize}
+~\\
+
+Especially useful when:
+\begin{itemize}
+\item difficult to mathematically derive
+\begin{itemize}
+\item the variance of $\hat{\theta}$
+\item the sampling distribution of $\hat{\theta}$
+\end{itemize}
+\item modeling assumptions are suspect
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Example: no bootstrap needed}{}
+
+$(X_1,Y_1)\ldots,(X_n,Y_n)$ are independent observations and
+\begin{align*}
+Y_i \mid X_i \sim N(\beta_0 + \beta_1 X_i,\sigma^2).
+\end{align*}
+~\\
+Estimate the slope 
+$\theta = \beta_1$ using simple linear regression. 
+~\\~\\
+If $\hat{\beta}_1$ is the simple linear regression slope, we can show that 
+$$\hat{\theta} = \hat{\beta}_1 \sim N\left(\beta_1, \sigma^2 / \sum_i (X_i-\overline{X})^2\right),$$
+and we can use this fact to compute a confidence interval.
+~\\~\\
+In many situations, it is not as easy to 
+derive the exact sampling distribution of $\hat{\theta}$.
+\end{frame}
+
+
+\begin{frame}[fragile]{Example: The Challenger disaster}{}
+~\\
+
+On January 28, 1986, the Space Shuttle Challenger
+disintigrated after 73 seconds of flight. 
+~\\~\\
+This was caused by failures in rocket booster
+parts called o-rings. 
+~\\~\\
+Prior to launch, there were concerns about the effect
+of low temperatures on o-ring performance.
+\end{frame}
+
+\begin{frame}[fragile]{Example: The Challenger disaster}{}
+~\\
+<<load-challenger, echo=FALSE>>=
+library(faraway)
+# The original data reports the number of damaged o-rings out of six 
+# see ?orings
+# Convert to one-zero format
+orings$ones <- orings$damage
+orings$zeroes <- 6 - orings$damage
+data_original <- 
+  data.frame(
+    do.call('rbind',
+          lapply(1:nrow(orings), function(i) 
+          return(cbind(fail = c(rep(1, orings[i,'ones']), rep(0, orings[i, 'zeroes'])),
+               temp = orings[i, 'temp']))))
+  )
+# Now each row is a single o-ring with a binary response
+@
+Data on \Sexpr{nrow(data_original)} o-rings used in previous launches: 
+~\\
+<<plot-challenger, echo=FALSE>>=
+# Plot damage (Y) as a function of temperature
+ggplot(data_original, aes(x=temp, y=fail))+
+  geom_point(position=position_jitter(width=0, height=0.01),
+             shape=1) +
+  mytheme + 
+  xlab("Temperature (deg. F)") + 
+  ylab("") +
+  ggtitle("") + 
+  scale_y_continuous(breaks=c(0,1),
+                     labels=c('y = 0, No damage', 'y = 1, Damage'))
+@
+
+\end{frame}
+\begin{frame}[fragile]{Example: The Challenger disaster}
+~\\
+
+We fit a logistic regression model 
+to relate damage probability to launch temperature:
+~\\~\\
+$$
+\log\left(\frac{P(Y = 1 \mid \texttt{temp})}{1 - P(Y = 1 \mid \texttt{temp})}\right) = \beta_{0} + \beta_{1}\texttt{temp}.
+$$
+\end{frame}
+
+\begin{frame}[fragile]{Example: The Challenger disaster}
+<<est1,echo=FALSE>>=
+cmod <- glm(fail ~ temp, family=binomial, data=data_original)
+b0 <- coef(cmod)[1]
+b1 <- coef(cmod)[2]
+@
+
+<<theta-hat,echo=FALSE>>=
+tau <- 0.2
+logit_tau <- log(tau / (1-tau))
+theta_hat <- (logit_tau - b0) / b1
+@
+{\small
+\begin{align*}
+\log\left(\frac{P(Y = 1 \mid \texttt{temp})}{1 - P(Y = 1 \mid \texttt{temp})}\right) &= \beta_{0} + \beta_{1}\texttt{temp} & 
+\, \, \hat{\beta}_0 = \Sexpr{round(b0,2)}, \hat{\beta}_1 = \Sexpr{round(b1,2)}
+\end{align*}
+}
+<<plot-phat,echo=FALSE>>=
+prddat <- data.frame(temp=seq(min(data_original$temp),
+                              max(data_original$temp),
+                              length.out=200))
+prddat$phat <- predict(cmod, prddat, type='response')
+
+# Plot damage (Y) as a function of temperature
+ggplot(data_original, aes(x=temp, y=fail))+
+  geom_point(shape=1,position=position_jitter(width=0,height=0.01)) +
+  mytheme + 
+  xlab("Temperature (deg. F)") + 
+  ylab("") +
+  ggtitle("") + 
+  annotate('text',label='Estimated damage probability',
+           size=4,hjust=0,x=57,y=0.4,color='red')+
+  scale_y_continuous(breaks=c(0,0.2,0.4,0.6,0.8,1.0)) +
+  geom_line(aes(temp,phat),
+            color='red', data=prddat)
+@
+\end{frame}
+
+\subsection{Target parameter}
+
+\begin{frame}[fragile]{Parameter of interest}
+~\\
+Suppose we want to estimate $\theta$, 
+the lowest temperature at which the probability of o-ring damage is less than 20 percent.
+~\\~\\
+We would like a confidence interval for $\theta$ based on our logistic regression model.
+\end{frame}
+
+\begin{frame}[fragile]{Parameter of interest}
+~\\
+$\theta= \texttt{temp}$% temperature such that damage probability is less than $0.2$.
+~\\~\\
+$\tau = 0.2 = $ damage probability
+~\\~\\
+Logistic regression model:
+{\small
+\begin{align*}
+\log\left(\frac{P(Y = 1 \mid \texttt{temp})}{1 - P(Y = 1 \mid \texttt{temp})}\right) &= \beta_{0} + \beta_{1}\texttt{temp}\\[6pt]
+\log\left(\frac{\tau}{1-\tau}\right) &= \beta_0+\beta_1\theta\\[6pt]
+\theta &= \frac{1}{\beta_1} \left(\log\frac{\tau}{1-\tau} - \beta_0\right) 
+\end{align*}
+}
+\end{frame}
+
+\begin{frame}[fragile]{Plug-in estimate of $\theta$}
+~\\
+
+Based on our logistic regression model: 
+
+{\small
+\begin{align*}
+\log\left(\frac{P(Y = 1 \mid \texttt{temp})}{1 - P(Y = 1 \mid \texttt{temp})}\right) &= \beta_{0} + \beta_{1}\texttt{temp} & 
+\, \, \hat{\beta}_0 = \Sexpr{round(b0,2)}, \hat{\beta}_1 = \Sexpr{round(b1,2)}
+\end{align*}
+$$\hat{\theta} = \frac{1}{\hat{\beta}_1} \left(\log\frac{0.2}{1 - 0.2} - \hat{\beta}_0\right) = \Sexpr{round(theta_hat,1)}$$
+}
+~\\
+Estimated minimum launch temperature: 60 degrees\\
+(to ensure damage probability of less than 0.2)
+~\\~\\
+Confidence interval for $\theta$?
+\end{frame}
+
+\begin{frame}{Confidence interval for $\theta$}
+~\\
+{\small
+$$\hat{\theta} = \frac{1}{\hat{\beta}_1} \left(\log\frac{0.2}{1 - 0.2} - \hat{\beta}_0\right) = \Sexpr{round(theta_hat,1)}$$
+}
+
+~\\
+To compute a CI, we usually need to know the sampling distribution of the estimator $\hat{\theta}$,
+or at least its variance. 
+~\\~\\
+In this case, $\hat{\theta}$ is a somewhat complicated function of $\hat{\beta}_0,\hat{\beta}_1$.
+~\\~\\
+With the bootstrap, we can compute a CI for $\theta$ {\bf even if we do not know how to mathematically derive the variance of $\hat{\theta}$}.
+\end{frame}
+
+\begin{frame}{The bootstrap: how it works}
+~\\
+Given a random sample $S$ of size $n$ drawn from a population,
+we compute $\hat{\theta}$ to estimate $\theta$.
+~\\~\\
+If we could repeatedly sample from this population,
+we could repeatedly compute $\hat{\theta}$ 
+and examine its sampling distribution. 
+~\\~\\
+The bootstrap treats the original sample $S$
+as a stand-in for the population. 
+~\\~\\
+Repeated sampling from $S$ 
+approximates repeated sampling from the population.
+\end{frame}
+
+\begin{frame}{The bootstrap: how it works}
+~\\
+Given a random sample $S$ of size $n$ drawn from a population,
+we compute $\hat{\theta}$ to estimate $\theta$.
+~\\~\\
+The bootstrap:
+\begin{enumerate}
+\item Generate $B$ ``bootstrap samples''
+\begin{itemize}
+\item with $n$ elements per sample
+\item each element randomly drawn from $S$, with replacement
+\end{itemize}
+\item Compute the estimates $\hat{\theta}^*_b$ using the $b$th bootstrap sample, $b=1,\ldots,B$.
+\item The collection $\hat{\theta}^*_1,\ldots,\hat{\theta}^*_B$ approximates the sampling distribution of $\hat{\theta}$. 
+\end{enumerate}
+
+\end{frame}
+
+
+% \begin{frame}[fragile]{Bootstrap CI}{}
+% 
+% Recall: 
+% \begin{enumerate}
+% \item Draw $B$ random samples of size $n$, with replacement, from the original dataset.
+% \item Compute bootstrap estimates $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ using the bootstrap samples.
+% \item The collection $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ approximates 
+%  the distribution of $\hat{\theta}$.
+% \end{enumerate}
+% ~\\
+% % Based on this principle,
+% % $$\overline{\theta^*}=\frac{1}{B}\sum_b\hat{\theta}^*_b$$
+% % and
+% % $$\text{SE}_{\text{boot}}(\hat{\theta}) = \sqrt{\frac{1}{B-1}\sum_b(\hat{\theta}_b^*-\overline{\theta^*})^2}$$
+% % are reasonable estimates of $\theta$ and 
+% % $\sqrt{\text{Var}(\hat{\theta})}=\text{SE}(\hat{\theta})$.
+% % ~\\~\\
+% % We use these bootstrap estimates in the approximate 95\% CI
+% % $$
+% % \overline{\theta^*} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta})
+% % $$
+% \end{frame}
+
+\begin{frame}[fragile]{Bootstrap CI}{}
+The collection $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ 
+approximates the distribution of $\hat{\theta}$.
+~\\~\\
+Based on this principle,
+$$\overline{\theta^*}=\frac{1}{B}\sum_b\hat{\theta}^*_b$$
+and
+$$\text{SE}_{\text{boot}}(\hat{\theta}) = \sqrt{\frac{1}{B-1}\sum_b(\hat{\theta}_b^*-\overline{\theta^*})^2}$$
+are reasonable estimates of $\theta$ and 
+$\sqrt{\text{Var}(\hat{\theta})}$.
+~\\~\\
+We use these bootstrap estimates in the approximate 95\% CI
+$$
+\overline{\theta^*} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta})
+$$
+\end{frame}
+
+\subsection{Bootstrap computation}
+\begin{frame}[fragile]{Bootstrap sampling}{Partial R code}
+%We can use the bootstrap to obtain an approximate
+%standard error for $\hat{\theta}$.
+<<bootSetup, echo=FALSE, cache=TRUE>>=
+# Number of bootstrap samples
+B <- 500
+n <- nrow(data_original) # Number of observations
+tau <- 0.2 # maximum probability of failure
+logit_tau <- log(tau / (1-tau))
+
+set.seed(108)
+@
+
+<<doBoot, cache=TRUE, dependson='bootSetup',size='scriptsize'>>=
+# A vector to store the resulting hat(theta)_b
+thetas_boot <- vector('numeric', B)
+
+for (b in 1:B){
+  
+  # random indices for sample b
+  ix_b <- sample(1:n, size=n, replace = TRUE) 
+  
+  # bootstrap sample b
+  data_b <- data_original[ix_b, ]
+  
+  # fit the regression model using the bootstrap sample
+  model_b <- glm(fail ~ temp, family=binomial, data = data_b)
+  
+  b0 <- coef(model_b)[1] # hat(beta)_0
+  b1 <- coef(model_b)[2] # hat(beta)_1
+  
+  # compute hat(theta)_b
+  thetas_boot[b] <- (log(0.2 / (1 - 0.2)) - b0) / b1 
+}
+@
+
+\end{frame}
+
+\subsection{Bootstrap confidence interval}
+
+\begin{frame}[fragile]{Bootstrap samples}{}
+Histogram of $\hat{\theta}^*_b$ 
+approximates the sampling 
+distribution of $\hat{\theta}$:
+~\\~\\
+<<bootHist,echo=FALSE>>=
+ggplot(data.frame(th = thetas_boot))+
+  geom_histogram(aes(x=th), fill='white', color='black', bins=30) +
+  mytheme +
+  xlab(expression(hat(theta)[b])) + ylab("Count")
+@
+\end{frame}
+
+\begin{frame}[fragile]{Bootstrap CI}{}
+Bootstrap estimate and standard error:
+<<bootPointEst,size='small'>>=
+(theta_hat_boot <- mean(thetas_boot))
+(se_hat_boot <- sd(thetas_boot))
+@
+An approximate 95\% confidence interval: 
+<<bootCI,size='small'>>=
+c(theta_hat_boot - 2 * se_hat_boot,
+  theta_hat_boot + 2 * se_hat_boot)
+@
+\end{frame}
+
+\begin{frame}{Summary}
+The bootstrap:
+\begin{itemize}
+\item provides confidence intervals and hypothesis tests 
+\item without restrictive assumptions (e.g. normal distribution)
+\item useful when mathematical analysis is not possible
+\item can be computationally expensive
+\end{itemize}
+~\\~\\
+{\scriptsize Further reading:
+\begin{itemize}
+\item Bradley Efron and Robert Tibshirani. An introduction to the bootstrap. CRC press, 1994.
+\item Bryan Manly. Randomization, bootstrap and Monte Carlo methods in biology. CRC press, 2007.
+\item Christopher Mooney and Robert Duval. Bootstrapping: A nonparametric approach to statistical inference. Sage, 1993.
+\end{itemize}
+}
+\end{frame}
+\begin{frame}{Thank you}
+~\\~\\
+Slides and code: github.com/brookluers/bootstrap-challenger
+\end{frame}
+
+%\begin{frame}[allowframebreaks]{References}
+%\bibliographystyle{plainnat}
+%{\scriptsize
+%\bibliography{refs}
+%}
+%\end{frame}
+
+\end{document}
+ 

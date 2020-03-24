@@ -1,1 +1,1 @@
-# bootstrap-challenger
+# Bootstrap Inference: A brief introduction using logistic regression
