@@ -413,7 +413,7 @@ an approximate 95\% CI is
 $$
 \hat{\theta} \pm 2 \times \sqrt{\text{Var}(\hat{\theta})}.
 $$
-The bootstrap CI replaces $\sqrt{\text{Var}(\hat{\theta})}$ with its bootstrap estimate: 
+A bootstrap CI replaces $\sqrt{\text{Var}(\hat{\theta})}$ with its bootstrap estimate: 
 $$
 \hat{\theta} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta}).
 $$
@@ -493,7 +493,7 @@ c(theta_hat - 2 * se_hat_boot,
 \begin{frame}{Summary}
 The bootstrap:
 \begin{itemize}
-\item provides confidence intervals and hypothesis tests 
+\item provides standard errors, confidence intervals, hypothesis tests 
 \item without restrictive assumptions
 \item useful when mathematical analysis is not possible
 \item can be computationally expensive
