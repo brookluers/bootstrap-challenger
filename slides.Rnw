@@ -269,7 +269,7 @@ b1 <- coef(cmod)[2]
 <<theta-hat,echo=FALSE>>=
 tau <- 0.2
 logit_tau <- log(tau / (1-tau))
-theta_hat <- (logit_tau - b0) / b1
+theta_hat <- unname((logit_tau - b0) / b1)
 @
 {\small
 \begin{align*}
@@ -348,12 +348,18 @@ Confidence interval for $\theta$?
 {\small
 $$\hat{\theta} = \frac{1}{\hat{\beta}_1} \left(\log\frac{0.2}{1 - 0.2} - \hat{\beta}_0\right) = \Sexpr{round(theta_hat,1)}$$
 }
-
 ~\\
-To compute a CI, we usually need to know the sampling distribution of the estimator $\hat{\theta}$,
+To compute a CI, we usually need to know the sampling distribution 
+of $\hat{\theta}$,
 or at least its variance. 
 ~\\~\\
-In this case, $\hat{\theta}$ is a somewhat complicated function of $\hat{\beta}_0,\hat{\beta}_1$.
+Given $\text{Var}(\hat{\theta})$, we could form the approximate 95\% CI
+$$
+\hat{\theta} \pm 2 \sqrt{\text{Var}(\hat{\theta})}.
+$$
+~\\
+In this case, it is not clear how to derive $\text{Var}(\hat{\theta})$. 
+%is a somewhat complicated function of $\hat{\beta}_0,\hat{\beta}_1$.
 ~\\~\\
 With the bootstrap, we can compute a CI for $\theta$ {\bf even if we do not know how to mathematically derive the variance of $\hat{\theta}$}.
 \end{frame}
@@ -392,44 +398,24 @@ The bootstrap:
 
 \end{frame}
 
-
-% \begin{frame}[fragile]{Bootstrap CI}{}
-% 
-% Recall: 
-% \begin{enumerate}
-% \item Draw $B$ random samples of size $n$, with replacement, from the original dataset.
-% \item Compute bootstrap estimates $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ using the bootstrap samples.
-% \item The collection $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ approximates 
-%  the distribution of $\hat{\theta}$.
-% \end{enumerate}
-% ~\\
-% % Based on this principle,
-% % $$\overline{\theta^*}=\frac{1}{B}\sum_b\hat{\theta}^*_b$$
-% % and
-% % $$\text{SE}_{\text{boot}}(\hat{\theta}) = \sqrt{\frac{1}{B-1}\sum_b(\hat{\theta}_b^*-\overline{\theta^*})^2}$$
-% % are reasonable estimates of $\theta$ and 
-% % $\sqrt{\text{Var}(\hat{\theta})}=\text{SE}(\hat{\theta})$.
-% % ~\\~\\
-% % We use these bootstrap estimates in the approximate 95\% CI
-% % $$
-% % \overline{\theta^*} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta})
-% % $$
-% \end{frame}
-
 \begin{frame}[fragile]{Bootstrap CI}{}
 The collection $\hat{\theta}_1^*,\ldots,\hat{\theta}_B^*$ 
 approximates the distribution of $\hat{\theta}$.
 ~\\~\\
 Based on this principle,
-$$\overline{\theta^*}=\frac{1}{B}\sum_b\hat{\theta}^*_b$$
-and
+%$$\overline{\theta^*}=\frac{1}{B}\sum_b\hat{\theta}^*_b$$
 $$\text{SE}_{\text{boot}}(\hat{\theta}) = \sqrt{\frac{1}{B-1}\sum_b(\hat{\theta}_b^*-\overline{\theta^*})^2}$$
-are reasonable estimates of $\theta$ and 
+is a reasonable estimate of 
 $\sqrt{\text{Var}(\hat{\theta})}$.
 ~\\~\\
-We use these bootstrap estimates in the approximate 95\% CI
+Given $\sqrt{\text{Var}(\hat{\theta})}$, 
+an approximate 95\% CI is
 $$
-\overline{\theta^*} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta})
+\hat{\theta} \pm 2 \times \sqrt{\text{Var}(\hat{\theta})}.
+$$
+The bootstrap CI replaces $\sqrt{\text{Var}(\hat{\theta})}$ with its bootstrap estimate: 
+$$
+\hat{\theta} \pm 2 \times \text{SE}_{\text{boot}}(\hat{\theta}).
 $$
 \end{frame}
 
@@ -488,15 +474,19 @@ ggplot(data.frame(th = thetas_boot))+
 \end{frame}
 
 \begin{frame}[fragile]{Bootstrap CI}{}
-Bootstrap estimate and standard error:
+Original estimate $\hat{\theta}$:
+<<theta-hat-print, size='small'>>=
+theta_hat
+@
+
+Bootstrap standard error:
 <<bootPointEst,size='small'>>=
-(theta_hat_boot <- mean(thetas_boot))
 (se_hat_boot <- sd(thetas_boot))
 @
 An approximate 95\% confidence interval: 
 <<bootCI,size='small'>>=
-c(theta_hat_boot - 2 * se_hat_boot,
-  theta_hat_boot + 2 * se_hat_boot)
+c(theta_hat - 2 * se_hat_boot,
+  theta_hat + 2 * se_hat_boot)
 @
 \end{frame}
 
@@ -504,7 +494,7 @@ c(theta_hat_boot - 2 * se_hat_boot,
 The bootstrap:
 \begin{itemize}
 \item provides confidence intervals and hypothesis tests 
-\item without restrictive assumptions (e.g. normal distribution)
+\item without restrictive assumptions
 \item useful when mathematical analysis is not possible
 \item can be computationally expensive
 \end{itemize}
